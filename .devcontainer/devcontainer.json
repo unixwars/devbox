@@ -1,0 +1,52 @@
+{
+  "name": "devbox",
+  "build": { "dockerfile": "Dockerfile" },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+  },
+
+  // Rootless Podman: map the host user to uid/gid 1000 inside, so files written to
+  // ~/src/projects keep your ownership on the host. Change 1000 if `id -u` differs.
+  "remoteUser": "dev",
+  "containerUser": "dev",
+  "runArgs": [
+    "--userns=keep-id:uid=1000,gid=1000",
+    "--memory=8g",
+    "--cpus=6"
+  ],
+
+  // Only this subdirectory of ~/src is visible. Edit the path to pick another one.
+  "workspaceMount": "source=${localEnv:HOME}/src/projects,target=/workspaces,type=bind",
+  "workspaceFolder": "/workspaces",
+
+  "mounts": [
+    // This repo, to open shared.code-workspace from inside the container
+    "source=${localWorkspaceFolder},target=/devbox,type=bind,readonly",
+    // State that must survive a rebuild
+    "source=devbox-claude,target=/home/dev/.claude,type=volume",
+    "source=devbox-agents,target=/home/dev/.agents,type=volume",
+    "source=devbox-secrets,target=/home/dev/.secrets,type=volume",
+    // Caches: npm packages and Playwright browsers
+    "source=devbox-npm,target=/home/dev/.npm,type=volume",
+    "source=devbox-cache,target=/home/dev/.cache,type=volume"
+  ],
+
+  "containerEnv": {
+    // Keeps ~/.claude.json inside the persisted directory
+    "CLAUDE_CONFIG_DIR": "/home/dev/.claude",
+    "PLAYWRIGHT_BROWSERS_PATH": "/home/dev/.cache/ms-playwright"
+  },
+
+  "postCreateCommand": "bash /devbox/.devcontainer/post-create.sh",
+  "postStartCommand": "bash /devbox/.devcontainer/gen-workspace.sh",
+
+  "customizations": {
+    "vscode": {
+      "settings": { "remote.autoForwardPorts": false },
+      "extensions": [
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}

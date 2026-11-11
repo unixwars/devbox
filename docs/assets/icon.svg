@@ -1,0 +1,60 @@
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 512 512"
+     fill="none">
+  <title>devbox</title>
+  <desc>Isometric development container with code brackets.</desc>
+
+  <defs>
+    <linearGradient id="side" x1="256" y1="260"
+                    x2="440" y2="420"
+                    gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="front" x1="100" y1="240"
+                    x2="260" y2="460"
+                    gradientUnits="userSpaceOnUse">
+      <stop stop-color="#172B4D"/>
+      <stop offset="1" stop-color="#0B1933"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Container top -->
+  <path d="M256 64 448 164 256 268 64 164Z"
+        fill="#3B82F6"/>
+
+  <!-- Left/front face -->
+  <path d="M64 164 256 268V448L64 344Z"
+        fill="url(#front)"
+        stroke="#60A5FA" stroke-width="5"
+        stroke-linejoin="round"/>
+
+  <!-- Right face -->
+  <path d="M256 268 448 164V344L256 448Z"
+        fill="url(#side)"
+        stroke="#60A5FA" stroke-width="5"
+        stroke-linejoin="round"/>
+
+  <!-- Container top rim -->
+  <path d="M64 164 256 268 448 164"
+        stroke="#BFDBFE" stroke-width="10"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Side ventilation -->
+  <path d="m300 310 24-13v94l-24 13z
+           M350 283l24-13v94l-24 13z
+           M400 256l24-13v94l-24 13z"
+        fill="#1D4ED8" opacity=".8"/>
+
+  <!-- Code brackets -->
+  <g stroke="#FFFFFF" stroke-width="15"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="m154 310-36 29 36 29"/>
+    <path d="m208 298-30 83"/>
+    <path d="m240 310 36 29-36 29"/>
+  </g>
+
+  <!-- Top terminal indicator -->
+  <circle cx="256" cy="166" r="10" fill="#FFFFFF"/>
+</svg>
