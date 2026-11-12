@@ -22,19 +22,20 @@ One development container for all local projects, light on a laptop (i5-1235U, 1
 
 ## Persistence
 
-Named volumes for `~/.claude`, `~/.agents`, `~/.secrets`, `~/.npm` and `~/.cache`.
+Named volumes for `~/.claude`, `~/.agents`, `~/.npm` and `~/.cache`.
 `CLAUDE_CONFIG_DIR` points at `~/.claude` so `.claude.json` is inside the volume too.
 Mount points are created in the image, owned by the user, so a fresh volume starts with
 the right ownership.
 
-Planned: replace the secrets volume with sops+age and a host-side unlock, see
-`docs/secrets.md`.
+Secrets are not in a volume: sops+age files in a host git repo (`~/src/secrets`, mounted
+read-only), decrypted by a box key that the host unseals onto tmpfs (`devbox-secrets unlock`)
+and that `with-secrets` uses per command. See `docs/secrets.md`.
 
 ## Known risks
 
 - Wrong file ownership on the host if the uid is not 1000 and `keep-id` is not adjusted.
 - Claude memory is keyed by path; renaming a project folder orphans its memory.
-- Every project in the box reads the same secrets volume.
+- The box key decrypts all dev and preview secrets of all projects while unlocked, and agents can print their own environment.
 - `--memory` and `--cpus` are ignored or rejected without cgroup v2 delegation.
 - Not run: this was written without Podman available. First build may need small fixes.
 

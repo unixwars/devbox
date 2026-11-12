@@ -3,8 +3,8 @@
 # devbox
 
 One rootless-Podman devcontainer shared by all local projects. Debian slim, Claude Code,
-Node LTS, gh. Claude's memory, plugins, skills, agents and secrets live in named volumes
-and survive rebuilds.
+Node LTS, gh. Claude's memory, plugins, skills and agents live in named volumes and survive rebuilds.
+Secrets are sops+age files on the host, see Secrets.
 
 ## Why?
 
@@ -36,12 +36,18 @@ I'm sure there's some other project out there that deals with this better, but:
 |---|---|---|
 | devbox-claude | ~/.claude | Claude config, memory, plugins, skills |
 | devbox-agents | ~/.agents | agents |
-| devbox-secrets | ~/.secrets | tokens (`gh_token` is linked to `~/.gh_token`) |
 | devbox-npm | ~/.npm | npm download cache |
 | devbox-cache | ~/.cache | Playwright browsers and other caches |
 
 `podman volume ls` lists them. A rebuild keeps them. `podman volume rm devbox-claude`
 deletes that state for good.
+
+## Secrets
+
+Secrets live encrypted in a private git repo at `~/src/secrets` (read-only at `/secrets`).
+On the host `devbox-secrets unlock` puts the box key on tmpfs; in the box
+`with-secrets <project> <env> -- <cmd>` runs a command with the values in its environment.
+Setup, workflow and limits: `docs/secrets.md`.
 
 ## Playwright (opt-in)
 

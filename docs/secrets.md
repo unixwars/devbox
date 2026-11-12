@@ -1,6 +1,6 @@
 # Secrets design
 
-Status: proposed, not implemented. Replaces the `devbox-secrets` volume and the per-project
+Status: implemented, container checks pending (see Manual verification). Replaces the `devbox-secrets` volume and the per-project
 gitignored `.env` files. Revised after review; items marked *(unverified)* were not checked
 against sources or a running Podman.
 
@@ -45,6 +45,41 @@ $XDG_RUNTIME_DIR/devbox/age.key (tmpfs)
   `sops decrypt` in an agent shell fails.
 - `_global` is merged by the wrapper, which runs nested `exec-env` calls: `_global/<env>.env`
   first, then the project file (project values win).
+
+## Setup (once, on the host)
+
+```
+mkdir -p ~/.config/devbox ~/src/secrets && chmod 700 ~/.config/devbox
+# keys
+age-keygen -o ~/.config/devbox/box.key
+age-keygen -o ~/.config/devbox/admin.key
+# box key: passphrase-protected, unsealed per session by `devbox-secrets unlock`
+age -p -o ~/.config/devbox/box.key.age ~/.config/devbox/box.key
+shred -u ~/.config/devbox/box.key
+# secrets repo
+cd ~/src/secrets && git init
+# write .sops.yaml (rules above, with the public keys printed by age-keygen), then:
+sops _global/dev.env       # add GH_TOKEN=... (fine-grained, no access to the secrets repo)
+git add -A && git commit -m "init"
+# put devbox-secrets on PATH
+ln -s /path/to/devbox/.devcontainer/host/devbox-secrets ~/.local/bin/devbox-secrets
+```
+
+- `devbox-secrets` reads `~/.config/devbox/box.key.age` and, for `edit`, the identity at
+  `~/.config/devbox/admin.key`. Override with `DEVBOX_KEY_ENC`, `DEVBOX_ADMIN_KEY`,
+  `DEVBOX_SECRETS_REPO`, `DEVBOX_RUNTIME_DIR`.
+- Admin key protection *(unverified, not run)*: sops >= 3.10 supports passphrase-protected age
+  identities. Encrypt the identity with `age -p -o ~/.config/devbox/admin.key.enc
+  ~/.config/devbox/admin.key`, shred the plaintext, and point `DEVBOX_ADMIN_KEY` at the
+  encrypted file; sops should prompt for the passphrase on `edit`. `devbox-secrets edit` runs
+  sops with `SOPS_AGE_KEY_FILE=$DEVBOX_ADMIN_KEY`.
+- Back up the admin key (and passphrase) as one Bitwarden item. Losing it loses prod.
+- Without `sops` and `age` on the host, install them first (versions pinned in
+  `.devcontainer/install-sops-age.sh`).
+- Tests: `bash tests/secrets/run.sh`.
+- In each project's `CLAUDE.md` / `AGENTS.md` add: "Never print the environment or secret
+  values (no `env`, `printenv`, `cat` of key or env files); run commands through
+  `with-secrets <project> <env> -- <cmd>`."
 
 ## Secrets repo layout
 
@@ -150,13 +185,16 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   use an `EDITOR="code --wait"` style editor.
 - Changing a value here does not rotate it. Rotate at the provider first, then update the file.
 - A new project or environment is a new file whose path matches a `.sops.yaml` rule.
+  `devbox-secrets edit` requires the file to exist. Create it with
+  `cd ~/src/secrets && sops <project>/<env>.env` (sops uses the matching `.sops.yaml` rule;
+  an unmatched path is rejected), then commit.
 - **Removing a recipient** (replacing the box key, or moving a file to admin-only): run
   `sops updatekeys`, then `sops rotate -i` on each file. `updatekeys` alone re-wraps the same
   data key. Old git commits stay decryptable with the old key, so if the box key was
   compromised, rotate every dev and preview value at the provider, not just the key.
 - Do not edit a decrypted copy and re-encrypt it.
 
-## Changes to this repo (when implemented)
+## Changes to this repo (implemented)
 
 - `Dockerfile`: install `sops` (3.10 or later, which supports passphrase-protected age
   identities and, in the pinned version, `--same-process`) and `age`, with checksums.
@@ -216,6 +254,10 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   transcript. direnv is fine for non-secret variables.
 - The box key protects all dev environments of all projects at once. Per-project keys would
   narrow that and cost more key management.
+- **Other sops key sources are not cleared.** `with-secrets` sets `SOPS_AGE_KEY_FILE`, but
+  `SOPS_AGE_KEY`, `SOPS_AGE_KEY_CMD` and `~/.config/sops/age/keys.txt` in the caller's
+  environment still apply. A caller that holds the admin key can decrypt prod through them.
+- `DEVBOX_SECRETS_DIR` must be an absolute path.
 - Claude's OAuth login (`.credentials.json` in `devbox-claude`) stays in plaintext in its
   volume.
 - Tools that regenerate plaintext, such as `vercel env pull` writing `.env.local`, defeat the
@@ -232,9 +274,26 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   must be deleted, or a variable `with-secrets` does not set silently falls back to a stale
   file value; the old `devbox-secrets` volume should be removed.
 
+## Manual verification (container level, after the first rebuild)
+
+Shell tests (`bash tests/secrets/run.sh`) cover the scripts only. Check by hand:
+
+- [ ] The image builds: sops/age install (checksums) and the `with-secrets` COPY.
+- [ ] `${localEnv:XDG_RUNTIME_DIR:/run/user/1000}` resolves to the real runtime dir (the
+      mount source exists and is the host `devbox` directory).
+- [ ] The `dev` user can read the mounted `/run/devbox-secrets/age.key` (`keep-id` ownership).
+- [ ] From a VS Code terminal: `with-secrets <project> dev -- true` works after `unlock` and
+      fails with `locked: ...` after `lock`.
+- [ ] `lock` then `unlock` on the host is visible in the running container (directory not
+      recreated, no restart).
+- [ ] The deny rules block `cat /run/devbox-secrets/age.key` and `sops -d`.
+- [ ] Each project's tooling honors injected variables over `.env` files.
+- [ ] `devbox-secrets status --container <name>` reports correctly with real podman.
+
 ## To verify when implementing
 
-Not run: this was designed without a running Podman.
+Not run: this was designed without a running Podman. The list above covers the
+container-level items; the rest remain open.
 
 - `${localEnv:XDG_RUNTIME_DIR}` is available to VS Code when it builds the mounts, with a
   fallback when it is not (Flatpak or snap VS Code may differ).
