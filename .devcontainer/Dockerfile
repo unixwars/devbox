@@ -31,6 +31,8 @@ RUN cat /tmp/bashrc-extra.sh >> /etc/bash.bashrc && rm /tmp/bashrc-extra.sh
 # Pinned sops + age for the secrets workflow (checksums verified in the script).
 COPY install-sops-age.sh /tmp/install-sops-age.sh
 RUN bash /tmp/install-sops-age.sh /usr/local/bin && rm /tmp/install-sops-age.sh
+COPY bin/with-secrets /usr/local/bin/with-secrets
+RUN chmod 755 /usr/local/bin/with-secrets
 
 USER $USERNAME
 WORKDIR /workspaces
