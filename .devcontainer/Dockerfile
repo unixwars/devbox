@@ -21,8 +21,7 @@ RUN groupadd -g "$GID" "$USERNAME" \
 # Mount points for the named volumes. Created here, owned by the user, so a fresh
 # volume inherits that ownership on first use.
 RUN install -d -o "$USERNAME" -g "$USERNAME" \
-      /home/$USERNAME/.claude /home/$USERNAME/.agents /home/$USERNAME/.cache /home/$USERNAME/.npm \
- && install -d -m 700 -o "$USERNAME" -g "$USERNAME" /home/$USERNAME/.secrets
+      /home/$USERNAME/.claude /home/$USERNAME/.agents /home/$USERNAME/.cache /home/$USERNAME/.npm
 
 # Interactive shells: tab completion and "did you mean to install ...?" hints.
 COPY bashrc-extra.sh /tmp/bashrc-extra.sh

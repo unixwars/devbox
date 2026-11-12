@@ -19,13 +19,19 @@
   "workspaceMount": "source=${localEnv:HOME}/src/projects,target=/workspaces,type=bind",
   "workspaceFolder": "/workspaces",
 
+  // Runs on the host: Podman fails container start when a bind source is missing.
+  "initializeCommand": "install -d -m 700 \"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/devbox\" && mkdir -p \"$HOME/src/secrets\"",
+
   "mounts": [
     // This repo, to open shared.code-workspace from inside the container
     "source=${localWorkspaceFolder},target=/devbox,type=bind,readonly",
     // State that must survive a rebuild
     "source=devbox-claude,target=/home/dev/.claude,type=volume",
     "source=devbox-agents,target=/home/dev/.agents,type=volume",
-    "source=devbox-secrets,target=/home/dev/.secrets,type=volume",
+    // Encrypted secrets repo (read-only) and the runtime dir holding the unlocked box key.
+    // The 1000 default matches the keep-id uid used above.
+    "source=${localEnv:HOME}/src/secrets,target=/secrets,type=bind,readonly",
+    "source=${localEnv:XDG_RUNTIME_DIR:/run/user/1000}/devbox,target=/run/devbox-secrets,type=bind,readonly",
     // Caches: npm packages and Playwright browsers
     "source=devbox-npm,target=/home/dev/.npm,type=volume",
     "source=devbox-cache,target=/home/dev/.cache,type=volume"
