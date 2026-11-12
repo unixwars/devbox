@@ -50,21 +50,31 @@ $XDG_RUNTIME_DIR/devbox/age.key (tmpfs)
 
 ```
 mkdir -p ~/.config/devbox ~/src/secrets && chmod 700 ~/.config/devbox
-# keys
+# keys; record the public keys now (before the box key is shredded)
 age-keygen -o ~/.config/devbox/box.key
 age-keygen -o ~/.config/devbox/admin.key
+BOX_PUB=$(age-keygen -y ~/.config/devbox/box.key)
+ADMIN_PUB=$(age-keygen -y ~/.config/devbox/admin.key)
 # box key: passphrase-protected, unsealed per session by `devbox-secrets unlock`
 age -p -o ~/.config/devbox/box.key.age ~/.config/devbox/box.key
 shred -u ~/.config/devbox/box.key
 # secrets repo
 cd ~/src/secrets && git init
-# 1. write .sops.yaml first (rules above; public keys from `age-keygen -y <keyfile>`):
-#    sops refuses to create files without it
+# 1. write .sops.yaml first (rules as in "Secrets repo layout"): sops refuses to create
+#    files without it
+cat > .sops.yaml <<EOF
+creation_rules:
+  - path_regex: ^(_global|[^/]+)/(dev|preview)\.env\$
+    age: $BOX_PUB,$ADMIN_PUB
+  - path_regex: ^[^/]+/prod\.env\$
+    age: $ADMIN_PUB
+EOF
 # 2. create the directory, then the file (sops does not create parent directories):
 mkdir -p _global
 sops _global/dev.env       # add GH_TOKEN=... (fine-grained, no access to the secrets repo)
 git add -A && git commit -m "init"
 # put devbox-secrets on PATH
+mkdir -p ~/.local/bin
 ln -s /path/to/devbox/.devcontainer/host/devbox-secrets ~/.local/bin/devbox-secrets
 ```
 
