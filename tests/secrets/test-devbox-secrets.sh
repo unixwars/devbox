@@ -41,18 +41,30 @@ bash "$ds" unlock >/dev/null 2>&1
 bash "$ds" status >/dev/null 2>&1; s2=$?
 if [ "$s1" = 1 ] && [ "$s2" = 0 ]; then pass status_reflects_state; else fail status_reflects_state "locked=$s1 unlocked=$s2"; fi
 
+export DEVBOX_EDIT_TMPDIR=$FIXTURE_DIR/run/edit-tmp
+mkdir -p "$DEVBOX_EDIT_TMPDIR"
 cat > "$FIXTURE_DIR/editor-stub" <<STUB
 #!/usr/bin/env bash
 echo "\$TMPDIR" > "$FIXTURE_DIR/seen-tmpdir"
+echo "\$1" > "$FIXTURE_DIR/seen-file"
 echo NEW=1 >> "\$1"
 STUB
 chmod +x "$FIXTURE_DIR/editor-stub"
 EDITOR=$FIXTURE_DIR/editor-stub bash "$ds" edit boutique dev >/dev/null 2>&1
 seen=$(cat "$FIXTURE_DIR/seen-tmpdir" 2>/dev/null)
+seenfile=$(cat "$FIXTURE_DIR/seen-file" 2>/dev/null)
 dec=$(SOPS_AGE_KEY_FILE=$ADMIN_KEY sops decrypt --input-type dotenv --output-type dotenv "$SECRETS_REPO/boutique/dev.env" 2>/dev/null)
-if [ "$seen" = "$DEVBOX_RUNTIME_DIR" ] && printf '%s\n' "$dec" | grep -qx 'NEW=1' \
+under() { case $1/ in "$2"/*) return 0;; *) return 1;; esac; }
+if [ -n "$seen" ] && [ -n "$seenfile" ] && ! under "$seen" "$DEVBOX_RUNTIME_DIR" \
+   && ! under "$seenfile" "$DEVBOX_RUNTIME_DIR" && [ "$seen" = "$DEVBOX_EDIT_TMPDIR" ] \
+   && printf '%s\n' "$dec" | grep -qx 'NEW=1' \
    && grep -q '^sops_' "$SECRETS_REPO/boutique/dev.env"; then
-  pass edit_uses_runtime_tmpdir; else fail edit_uses_runtime_tmpdir "tmpdir=$seen"; fi
+  pass edit_tmp_outside_runtime_dir; else fail edit_tmp_outside_runtime_dir "tmpdir=$seen"; fi
+
+mkdir -p "$DEVBOX_RUNTIME_DIR/sub"
+DEVBOX_EDIT_TMPDIR=$DEVBOX_RUNTIME_DIR/sub EDITOR=$FIXTURE_DIR/editor-stub bash "$ds" edit boutique dev >/dev/null 2>&1; r1=$?
+DEVBOX_EDIT_TMPDIR=$DEVBOX_RUNTIME_DIR EDITOR=$FIXTURE_DIR/editor-stub bash "$ds" edit boutique dev >/dev/null 2>&1; r2=$?
+if [ "$r1" = 2 ] && [ "$r2" = 2 ]; then pass edit_refuses_tmp_under_runtime_dir; else fail edit_refuses_tmp_under_runtime_dir "$r1 $r2"; fi
 
 bash "$ds" edit ../x dev >/dev/null 2>&1; e1=$?
 bash "$ds" edit boutique 'a b' >/dev/null 2>&1; e2=$?

@@ -58,4 +58,10 @@ eq no_plaintext_on_disk '' "$(ls -A "$FIXTURE_DIR/tmp")"
 out=$(SOPS_AGE_KEY_FILE=/nonexistent/bad bash "$ws" boutique dev -- sh -c 'echo $EQ' 2>/dev/null)
 eq key_not_from_env 'a=b=c' "$out"
 
+out=$(bash "$ws" boutique dev -- sh -c 'echo "${SOPS_AGE_KEY_FILE-unset}"' 2>/dev/null)
+eq wrapped_cmd_has_no_key_file unset "$out"
+
+SOPS_AGE_KEY=$(grep '^AGE-SECRET-KEY' "$ADMIN_KEY") bash "$ws" boutique prod -- true >/dev/null 2>&1; rc=$?
+eq sops_age_key_env_ignored 5 "$rc"
+
 exit "$LIB_FAILED"

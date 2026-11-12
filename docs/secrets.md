@@ -156,9 +156,13 @@ be replaced with `with-secrets`. Each project must be checked individually.
 If a tool insists on a file:
 
 ```
-TMPDIR=/dev/shm sops exec-file --filename boutique.env /secrets/boutique/dev.env 'tool --env-file {}'
+SOPS_AGE_KEY_FILE=/run/devbox-secrets/age.key TMPDIR=/dev/shm \
+  sops exec-file --filename boutique.env /secrets/boutique/dev.env 'tool --env-file {}'
 ```
 
+- This is for a human at a terminal: `SOPS_AGE_KEY_FILE` is deliberately not in `containerEnv`
+  (so it is set inline), and `Bash(sops *)` denies the command for agents. It decrypts that one
+  file only and does not merge `_global`.
 - `exec-file` creates its temp directory under `$TMPDIR`, which in the container is the overlay
   filesystem, not tmpfs. Set `TMPDIR=/dev/shm` as above, or add `--tmpfs /tmp` to `runArgs`.
 - By default it exposes a FIFO: nothing hits disk, but it can be read once, so tools that read
@@ -169,7 +173,7 @@ TMPDIR=/dev/shm sops exec-file --filename boutique.env /secrets/boutique/dev.env
 ```
 devbox-secrets unlock   # host: prompts for the box key passphrase, writes the key to tmpfs
 devbox-secrets lock     # host: removes the key file
-devbox-secrets status   # host side, plus a check from inside the container
+devbox-secrets status   # host side, add `--container <name>` to also check from inside the container
 ```
 
 - `unlock` and `lock` only create or remove the key **file inside the existing directory**
@@ -226,7 +230,7 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
 - Claude settings template merged into `~/.claude/settings.json` (user settings, so paths are
   anchored with `//` for absolute):
   - `Read(//run/devbox-secrets/**)`
-  - `Read(//workspaces/**/.env*)`, with an allowance for `.env.example`
+  - `Read(//workspaces/**/.env*)`, which also denies `.env.example` (deny beats allow, so there is no allowance)
   - `Bash(sops *)`: `with-secrets` calls sops internally and is unaffected
   - `Bash(with-secrets * -- env*)`, `Bash(with-secrets * -- printenv*)`, `Bash(* /run/devbox-secrets*)`
   - A relative `Read(/run/...)` pattern is anchored at the settings source and would protect
@@ -267,9 +271,10 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   transcript. direnv is fine for non-secret variables.
 - The box key protects all dev environments of all projects at once. Per-project keys would
   narrow that and cost more key management.
-- **Other sops key sources are not cleared.** `with-secrets` sets `SOPS_AGE_KEY_FILE`, but
-  `SOPS_AGE_KEY`, `SOPS_AGE_KEY_CMD` and `~/.config/sops/age/keys.txt` in the caller's
-  environment still apply. A caller that holds the admin key can decrypt prod through them.
+- **`~/.config/sops/age/keys.txt` is not cleared.** `with-secrets` unsets `SOPS_AGE_KEY` and
+  `SOPS_AGE_KEY_CMD`, sets `SOPS_AGE_KEY_FILE` for its own sops calls and removes it from the
+  wrapped command's environment, but a `keys.txt` under `~/.config/sops/age` still applies. A
+  caller that holds the admin key there can decrypt prod.
 - `DEVBOX_SECRETS_DIR` must be an absolute path.
 - Claude's OAuth login (`.credentials.json` in `devbox-claude`) stays in plaintext in its
   volume.
@@ -300,6 +305,7 @@ Shell tests (`bash tests/secrets/run.sh`) cover the scripts only. Check by hand:
 - [ ] `lock` then `unlock` on the host is visible in the running container (directory not
       recreated, no restart).
 - [ ] The deny rules block `cat /run/devbox-secrets/age.key` and `sops -d`.
+- [ ] `devbox-secrets edit` temp files are not visible inside the container (check `/run/devbox-secrets` while an edit is open).
 - [ ] Each project's tooling honors injected variables over `.env` files.
 - [ ] `devbox-secrets status --container <name>` reports correctly with real podman.
 
