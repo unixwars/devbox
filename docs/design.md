@@ -27,6 +27,9 @@ Named volumes for `~/.claude`, `~/.agents`, `~/.secrets`, `~/.npm` and `~/.cache
 Mount points are created in the image, owned by the user, so a fresh volume starts with
 the right ownership.
 
+Planned: replace the secrets volume with sops+age and a host-side unlock, see
+`docs/secrets.md`.
+
 ## Known risks
 
 - Wrong file ownership on the host if the uid is not 1000 and `keep-id` is not adjusted.
