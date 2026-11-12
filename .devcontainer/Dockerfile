@@ -28,5 +28,9 @@ RUN install -d -o "$USERNAME" -g "$USERNAME" \
 COPY bashrc-extra.sh /tmp/bashrc-extra.sh
 RUN cat /tmp/bashrc-extra.sh >> /etc/bash.bashrc && rm /tmp/bashrc-extra.sh
 
+# Pinned sops + age for the secrets workflow (checksums verified in the script).
+COPY install-sops-age.sh /tmp/install-sops-age.sh
+RUN bash /tmp/install-sops-age.sh /usr/local/bin && rm /tmp/install-sops-age.sh
+
 USER $USERNAME
 WORKDIR /workspaces
