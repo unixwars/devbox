@@ -58,7 +58,10 @@ age -p -o ~/.config/devbox/box.key.age ~/.config/devbox/box.key
 shred -u ~/.config/devbox/box.key
 # secrets repo
 cd ~/src/secrets && git init
-# write .sops.yaml (rules above, with the public keys printed by age-keygen), then:
+# 1. write .sops.yaml first (rules above; public keys from `age-keygen -y <keyfile>`):
+#    sops refuses to create files without it
+# 2. create the directory, then the file (sops does not create parent directories):
+mkdir -p _global
 sops _global/dev.env       # add GH_TOKEN=... (fine-grained, no access to the secrets repo)
 git add -A && git commit -m "init"
 # put devbox-secrets on PATH
@@ -186,7 +189,7 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
 - Changing a value here does not rotate it. Rotate at the provider first, then update the file.
 - A new project or environment is a new file whose path matches a `.sops.yaml` rule.
   `devbox-secrets edit` requires the file to exist. Create it with
-  `cd ~/src/secrets && sops <project>/<env>.env` (sops uses the matching `.sops.yaml` rule;
+  `cd ~/src/secrets && mkdir -p <project> && sops <project>/<env>.env` (sops uses the matching `.sops.yaml` rule;
   an unmatched path is rejected), then commit.
 - **Removing a recipient** (replacing the box key, or moving a file to admin-only): run
   `sops updatekeys`, then `sops rotate -i` on each file. `updatekeys` alone re-wraps the same
