@@ -23,7 +23,7 @@
   "initializeCommand": "install -d -m 700 \"${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/devbox\" && mkdir -p \"$HOME/src/secrets\"",
 
   "mounts": [
-    // This repo, to open shared.code-workspace from inside the container
+    // This repo, so the scripts in .devcontainer/ run from inside the container
     "source=${localWorkspaceFolder},target=/devbox,type=bind,readonly",
     // State that must survive a rebuild
     "source=devbox-claude,target=/home/dev/.claude,type=volume",

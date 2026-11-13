@@ -50,16 +50,20 @@ $XDG_RUNTIME_DIR/devbox/age.key (tmpfs)
 
 ```
 mkdir -p ~/.config/devbox ~/src/secrets && chmod 700 ~/.config/devbox
+
 # keys; record the public keys now (before the box key is shredded)
 age-keygen -o ~/.config/devbox/box.key
 age-keygen -o ~/.config/devbox/admin.key
 BOX_PUB=$(age-keygen -y ~/.config/devbox/box.key)
 ADMIN_PUB=$(age-keygen -y ~/.config/devbox/admin.key)
+
 # box key: passphrase-protected, unsealed per session by `devbox-secrets unlock`
 age -p -o ~/.config/devbox/box.key.age ~/.config/devbox/box.key
 shred -u ~/.config/devbox/box.key
+
 # secrets repo
 cd ~/src/secrets && git init
+
 # 1. write .sops.yaml first (rules as in "Secrets repo layout"): sops refuses to create
 #    files without it
 cat > .sops.yaml <<EOF
@@ -69,10 +73,12 @@ creation_rules:
   - path_regex: ^[^/]+/prod\.env\$
     age: $ADMIN_PUB
 EOF
+
 # 2. create the directory, then the file (sops does not create parent directories):
 mkdir -p _global
 sops _global/dev.env       # add GH_TOKEN=... (fine-grained, no access to the secrets repo)
 git add -A && git commit -m "init"
+
 # put devbox-secrets on PATH
 mkdir -p ~/.local/bin
 ln -s /path/to/devbox/.devcontainer/host/devbox-secrets ~/.local/bin/devbox-secrets
@@ -142,8 +148,8 @@ Files use sops' dotenv store, which is stricter than most dotenv loaders:
 ### Use a secret
 
 ```
-with-secrets boutique dev -- npm run dev
-with-secrets boutique dev -- npx prisma migrate dev
+with-secrets <my_project> dev -- npm run dev
+with-secrets <my_project> dev -- npx prisma migrate dev
 ```
 
 Values exist only in that process and its children, and nothing is written to the project.
@@ -157,7 +163,7 @@ If a tool insists on a file:
 
 ```
 SOPS_AGE_KEY_FILE=/run/devbox-secrets/age.key TMPDIR=/dev/shm \
-  sops exec-file --filename boutique.env /secrets/boutique/dev.env 'tool --env-file {}'
+  sops exec-file --filename <my_project>.env /secrets/<my_project>/dev.env 'tool --env-file {}'
 ```
 
 - This is for a human at a terminal: `SOPS_AGE_KEY_FILE` is deliberately not in `containerEnv`
@@ -191,7 +197,7 @@ devbox-secrets status   # host side, add `--container <name>` to also check from
 On the host:
 
 ```
-devbox-secrets edit boutique dev      # sops opens the decrypted file in $EDITOR, re-encrypts on save
+devbox-secrets edit <my_project> dev      # sops opens the decrypted file in $EDITOR, re-encrypts on save
 git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
 ```
 

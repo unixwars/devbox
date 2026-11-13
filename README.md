@@ -10,12 +10,41 @@ Secrets are sops+age files on the host, see Secrets.
 
 Agents are great for coding, but my laptop holds my digital life and it would be unwise
 to hand over the keys to the castle. I got tired of spinning up a different devcontainer
-for each project I'm working on, so this brings us here.
+for each project I'm working on, so this brings us here. I also wanted to make sure I kept
+my secrets properly persisted under source control, without worrying about leaks, loss,
+or having to constantly scrub them because Claude decide to parse whole gitignored files
+and suddenly making them visible in the session.
 
-I'm sure there's some other project out there that deals with this better, but:
+## What?
 
-- I don't want to spend hours researching.
-- This covers my exact needs right now. So this brings us here again. 😀
+This project gives you isolation between your development box and the rest of your data, 
+keeps your development and production secrets segregated by audience, and solves the
+following problems:
+
+- Accidental leaks when an agent reads a .env file, the values enter the session transcript, and they have to be rotated.
+- Logistics. Secrets sit in gitignored files per project and can be lost, with no single place to update them.
+- Plaintext at rest in a volume readable by anything running in the box.
+
+It reduces accidents; it does not stop a determined exfiltration or an agent that prints its own environment. 
+
+## Who?
+
+This project is for you if:
+
+- you want to keep your devbox isolated from the rest of your data.
+- you want to keep your secrets stored, encrypted, under source control.
+- you don't want to spend hours researching.
+- you need a lightweight process that suits a solo developer workflow.
+- you're OK with agents seeing each other's code, and potentially secrets to their respective dev environments.
+- you care about production secrets being kept 
+
+This project is not for you if:
+
+- you're looking to gate everything your agent does, including network access.
+- you're trying to defend against hostile agents.
+- you're orchestrating complex workflows where agents interact with whole development teams.
+- you need complete isolation between projects.
+- you need to inject credentials on the fly, including secrets, so your agents never actually see them.
 
 ## Setup (once)
 
@@ -27,8 +56,11 @@ I'm sure there's some other project out there that deals with this better, but:
 4. Check `id -u` and `id -g`. If either is not 1000, change `--userns=keep-id:uid=...,gid=...`
    in `devcontainer.json` and `UID`/`GID` in the Dockerfile.
 5. Open this folder in VS Code and run "Dev Containers: Reopen in Container".
-6. In the container, File > Open Workspace from File > `/devbox/shared.code-workspace`.
-   Add one `{ "name", "path": "/workspaces/<project>" }` entry per project.
+6. In the container, File > Open Workspace from File > `/workspaces/shared.code-workspace`.
+   You do not add projects by hand: `gen-workspace.sh` runs on every container start and
+   lists each repo under `/workspaces`, plus the git worktrees it finds for them. Folders you
+   add or rename by hand, and the rest of the file, are kept; entries whose folder is gone are
+   dropped. If you put comments in the file it is left untouched, so keep it plain JSON.
 
 ## Volumes
 
