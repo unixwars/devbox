@@ -1,6 +1,6 @@
 # Secrets design
 
-Status: implemented, container checks pending (see Manual verification). Replaces the `devbox-secrets` volume and the per-project
+Status: implemented, container checks pending (see Verification). Replaces the `devbox-secrets` volume and the per-project
 gitignored `.env` files. Revised after review; items marked *(unverified)* were not checked
 against sources or a running Podman.
 
@@ -87,11 +87,12 @@ ln -s /path/to/devbox/.devcontainer/host/devbox-secrets ~/.local/bin/devbox-secr
 - `devbox-secrets` reads `~/.config/devbox/box.key.age` and, for `edit`, the identity at
   `~/.config/devbox/admin.key`. Override with `DEVBOX_KEY_ENC`, `DEVBOX_ADMIN_KEY`,
   `DEVBOX_SECRETS_REPO`, `DEVBOX_RUNTIME_DIR`.
-- Admin key protection *(unverified, not run)*: sops >= 3.10 supports passphrase-protected age
-  identities. Encrypt the identity with `age -p -o ~/.config/devbox/admin.key.enc
-  ~/.config/devbox/admin.key`, shred the plaintext, and point `DEVBOX_ADMIN_KEY` at the
-  encrypted file; sops should prompt for the passphrase on `edit`. `devbox-secrets edit` runs
-  sops with `SOPS_AGE_KEY_FILE=$DEVBOX_ADMIN_KEY`.
+- Admin key protection (verified on a host, sops 3.13.3, 2026-11-15): sops >= 3.10 supports
+  passphrase-protected age identities. Encrypt the identity with `age -p -o
+  ~/.config/devbox/admin.key.enc ~/.config/devbox/admin.key`, shred the plaintext, and point
+  `DEVBOX_ADMIN_KEY` at the encrypted file; sops prompts for the passphrase. The check ran
+  `sops decrypt` with `SOPS_AGE_KEY_FILE` set to such a file; `devbox-secrets edit` uses the same
+  variable (`SOPS_AGE_KEY_FILE=$DEVBOX_ADMIN_KEY`).
 - Back up the admin key (and passphrase) as one Bitwarden item. Losing it loses prod.
 - Without `sops` and `age` on the host, install them first (versions pinned in
   `.devcontainer/install-sops-age.sh`).
@@ -298,33 +299,50 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   must be deleted, or a variable `with-secrets` does not set silently falls back to a stale
   file value; the old `devbox-secrets` volume should be removed.
 
-## Manual verification (container level, after the first rebuild)
+## Verification
 
-Shell tests (`bash tests/secrets/run.sh`) cover the scripts only. Check by hand:
+Shell tests (`bash tests/secrets/run.sh`) cover the scripts only. For everything that needs
+podman, run the wizard on the host (not in the container):
 
-- [ ] The image builds: sops/age install (checksums) and the `with-secrets` COPY.
+```
+bash tests/verify-on-host.sh            # all 10 stages
+bash tests/verify-on-host.sh --from 9   # resume at a stage; the report is appended to
+```
+
+It writes `devbox-verify-report.txt` (check names only, no secret values). Stages 1-8 use
+throwaway keys and a sandbox container with the same mounts as `devcontainer.json`; stages 9-10
+test the rebuilt devbox itself and refuse the sandbox or the old container.
+
+Verified with the wizard on a host (2026-11-15, sandbox container, not the real devcontainer):
+
+- [x] The image builds: sops/age install (checksums) and the `with-secrets` COPY.
+- [x] The `dev` user can read the mounted key with `keep-id` ownership (`dev`, mode 600).
+- [x] `with-secrets` works after `unlock` and fails with `locked: ...` (exit 3) after `lock`.
+- [x] `lock` then `unlock` on the host is visible in the running container, no restart.
+- [x] `devbox-secrets edit` temp files are not visible inside the container.
+- [x] `devbox-secrets status --container <name>` reports correctly with real podman.
+- [x] The passphrase-protected admin key works with sops (see Setup).
+
+Still to verify in the rebuilt devcontainer (wizard stages 9-10):
+
 - [ ] `${localEnv:XDG_RUNTIME_DIR:/run/user/1000}` resolves to the real runtime dir (the
       mount source exists and is the host `devbox` directory).
-- [ ] The `dev` user can read the mounted `/run/devbox-secrets/age.key` (`keep-id` ownership).
-- [ ] From a VS Code terminal: `with-secrets <project> dev -- true` works after `unlock` and
-      fails with `locked: ...` after `lock`.
-- [ ] `lock` then `unlock` on the host is visible in the running container (directory not
-      recreated, no restart).
-- [ ] The deny rules block `cat /run/devbox-secrets/age.key` and `sops -d`.
-- [ ] `devbox-secrets edit` temp files are not visible inside the container (check `/run/devbox-secrets` while an edit is open).
+- [ ] The deny rules are merged into `~/.claude/settings.json` and block
+      `cat /run/devbox-secrets/age.key` and `sops -d`.
+- [ ] `gen-workspace.sh` writes `/workspaces/shared.code-workspace`.
 - [ ] Each project's tooling honors injected variables over `.env` files.
-- [ ] `devbox-secrets status --container <name>` reports correctly with real podman.
 
 ## To verify when implementing
 
-Not run: this was designed without a running Podman. The list above covers the
-container-level items; the rest remain open.
+The host checks above ran in a sandbox container; the items below that name the real
+devcontainer remain open.
 
 - `${localEnv:XDG_RUNTIME_DIR}` is available to VS Code when it builds the mounts, with a
   fallback when it is not (Flatpak or snap VS Code may differ).
-- File ownership of the tmpfs key inside the container under `--userns=keep-id`.
-- The pinned sops supports `exec-env --same-process` and passphrase-protected age identities;
-  the `age -p` flow (encrypt the identity with `age -p`, unlock with `age -d -o` under umask 077).
+- File ownership of the tmpfs key inside the container under `--userns=keep-id` (verified in
+  the sandbox container; confirm in the real one).
+- The pinned sops supports `exec-env --same-process` (shell tests) and passphrase-protected age
+  identities (verified on the host); the box-key `age -p` / `age -d` unlock flow also ran.
 - Each project's tooling honors pre-set environment variables over `.env` files.
 - Whether the host uses SELinux (mounts would need relabelling; the existing ones have none).
 - Shell tests with throwaway keys: unlocked run works, locked run fails cleanly, the box key

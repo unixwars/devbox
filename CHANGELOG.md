@@ -15,12 +15,16 @@ All notable changes to devbox. Versions are git tags on `main`.
   through the wrapper, merged into `~/.claude/settings.json` on create.
 - Pinned sops 3.13.3 and age 1.3.2, installed with verified checksums.
 - Shell tests in `tests/secrets/` (`bash tests/secrets/run.sh`).
+- `tests/verify-on-host.sh`: interactive wizard that verifies the setup from the host (sandbox
+  container with the real mounts, passphrase flows, then the rebuilt devcontainer); `--from N` resumes.
+- `VERSION` file.
 - `docs/secrets.md`: design, setup, limits and a manual verification checklist.
 
 ### Changed
 - `shared.code-workspace` is generated at `/workspaces/shared.code-workspace` by
   `gen-workspace.sh` on every start; README no longer asks for manual entries.
 - README: intro, audience, and secrets sections.
+- VS Code port auto-forwarding is on (`remote.autoForwardPorts: true`; it was off in 0.1.0).
 
 ### Removed
 - The `devbox-secrets` volume and the `~/.gh_token` link. `GH_TOKEN` now comes from
