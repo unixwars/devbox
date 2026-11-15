@@ -48,7 +48,7 @@
 
   "customizations": {
     "vscode": {
-      "settings": { "remote.autoForwardPorts": false },
+      "settings": { "remote.autoForwardPorts": true },
       "extensions": [
         "anthropic.claude-code",
         "dbaeumer.vscode-eslint"
