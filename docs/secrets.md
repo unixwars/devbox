@@ -1,6 +1,6 @@
 # Secrets design
 
-Status: implemented, container checks pending (see Verification). Replaces the `devbox-secrets` volume and the per-project
+Status: implemented and verified (see Verification). Replaces the `devbox-secrets` volume and the per-project
 gitignored `.env` files. Revised after review; items marked *(unverified)* were not checked
 against sources or a running Podman.
 
@@ -347,27 +347,29 @@ Verified with the wizard on a host (2026-11-15, sandbox container, not the real 
 - [x] `devbox-secrets status --container <name>` reports correctly with real podman.
 - [x] The passphrase-protected admin key works with sops (see Setup).
 
-Still to verify in the rebuilt devcontainer (wizard stages 9-10):
+Verified in the rebuilt devcontainer (wizard stages 9-10, 2026-11-16):
 
-- [ ] `${localEnv:XDG_RUNTIME_DIR:/run/user/1000}` resolves to the real runtime dir (the
+- [x] `${localEnv:XDG_RUNTIME_DIR:/run/user/1000}` resolves to the real runtime dir (the
       mount source exists and is the host `devbox` directory).
-- [ ] The deny rules are merged into `~/.claude/settings.json` and block
+- [x] The deny rules are merged into `~/.claude/settings.json` and block
       `cat /run/devbox-secrets/age.key` and `sops -d`.
-- [ ] `gen-workspace.sh` writes `/workspaces/shared.code-workspace`.
-- [ ] Each project's tooling honors injected variables over `.env` files.
+- [x] `gen-workspace.sh` writes `/workspaces/shared.code-workspace`.
+- [x] Each project's tooling honors injected variables over `.env` files.
 
-## To verify when implementing
+## Verification notes
 
-The host checks above ran in a sandbox container; the items below that name the real
-devcontainer remain open.
+The sandbox checks and the rebuilt-devcontainer checks above have both passed. The items below
+are background; none is still open except the SELinux question.
 
 - `${localEnv:XDG_RUNTIME_DIR}` is available to VS Code when it builds the mounts, with a
   fallback when it is not (Flatpak or snap VS Code may differ).
 - File ownership of the tmpfs key inside the container under `--userns=keep-id` (verified in
-  the sandbox container; confirm in the real one).
+  the sandbox and the real container).
 - The pinned sops supports `exec-env --same-process` (shell tests) and passphrase-protected age
   identities (verified on the host); the box-key `age -p` / `age -d` unlock flow also ran.
-- Each project's tooling honors pre-set environment variables over `.env` files.
+- Each project's tooling honors pre-set environment variables over `.env` files (verified).
+  sops' dotenv format keeps quotes literally, so strip the quotes from values before
+  encrypting a migrated `.env`; otherwise the app receives `"value"` including the quotes.
 - Whether the host uses SELinux (mounts would need relabelling; the existing ones have none).
 - Shell tests with throwaway keys: unlocked run works, locked run fails cleanly, the box key
   cannot decrypt a prod file, `exec-env` writes no plaintext to disk, quoting survives
