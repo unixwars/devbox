@@ -59,8 +59,9 @@ you back up the admin key first), creates `~/src/secrets` with `.sops.yaml`, enc
 `_global/dev.env` (GH_TOKEN) and any project files you name, links `devbox-secrets` into
 `~/.local/bin`, tests unlock/decrypt/lock, and offers a private remote. It is re-runnable: finished
 steps are skipped, and it never prints or stores secret values. An environment name must
-match a rule in `.sops.yaml` (by default `dev`, `preview`, `prod`; edit the regex to add one such as
-`local`), otherwise sops refuses with "no matching creation rules found". The manual steps below do
+match a rule in `.sops.yaml` (by default `dev`, `preview`, `local` on the box key and `prod`
+admin-only; edit the regex to add others), otherwise sops refuses with "no matching creation rules
+found". The manual steps below do
 the same thing.
 
 Backup item: in any password manager, make one secure note named for the admin key. Paste the contents of
@@ -90,7 +91,7 @@ cd ~/src/secrets && git init
 #    files without it
 cat > .sops.yaml <<EOF
 creation_rules:
-  - path_regex: ^(_global|[^/]+)/(dev|preview)\.env\$
+  - path_regex: ^(_global|[^/]+)/(dev|preview|local)\.env\$
     age: $BOX_PUB,$ADMIN_PUB
   - path_regex: ^[^/]+/prod\.env\$
     age: $ADMIN_PUB
@@ -131,6 +132,7 @@ secrets/
   _global/dev.env          # GH_TOKEN and other cross-project values
   <project>/dev.env        # encrypted to box key + admin key
   <project>/preview.env    # see decision below
+  <project>/local.env      # box key + admin key, like dev
   <project>/prod.env       # encrypted to the admin key only
 ```
 
@@ -139,7 +141,7 @@ relative to the directory of `.sops.yaml`, not a glob:
 
 ```yaml
 creation_rules:
-  - path_regex: ^(_global|[^/]+)/(dev|preview)\.env$
+  - path_regex: ^(_global|[^/]+)/(dev|preview|local)\.env$
     age: <box public key>,<admin public key>
   - path_regex: ^[^/]+/prod\.env$
     age: <admin public key>
@@ -152,7 +154,7 @@ creation_rules:
   rules *(unverified for age)*.
 - `prod.env` is never encrypted to the box key, so the box cannot decrypt it even though the
   ciphertext is visible there.
-- `preview.env` is deliberately on the box key (see Decisions).
+- `preview.env` is deliberately on the box key (see Decisions). `local.env` is on it too, like `dev.env`.
 
 ### File format
 

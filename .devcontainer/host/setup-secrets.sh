@@ -310,7 +310,7 @@ if [[ -f .sops.yaml ]]; then
 else
   cat > .sops.yaml <<EOF
 creation_rules:
-  - path_regex: ^(_global|[^/]+)/(dev|preview)\.env\$
+  - path_regex: ^(_global|[^/]+)/(dev|preview|local)\.env\$
     age: $BOX_PUB,$ADMIN_PUB
   - path_regex: ^[^/]+/prod\.env\$
     age: $ADMIN_PUB
