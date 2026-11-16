@@ -58,9 +58,10 @@ It installs the pinned sops/age if missing, generates and passphrase-protects bo
 you back up the admin key first), creates `~/src/secrets` with `.sops.yaml`, encrypts
 `_global/dev.env` (GH_TOKEN) and any project files you name, links `devbox-secrets` into
 `~/.local/bin`, tests unlock/decrypt/lock, and offers a private remote. It is re-runnable: finished
-steps are skipped, and it never prints or stores secret values. Environments are limited to
-`dev`, `preview` and `prod`, the ones `.sops.yaml` has rules for. The manual steps below do the same
-thing.
+steps are skipped, and it never prints or stores secret values. An environment name must
+match a rule in `.sops.yaml` (by default `dev`, `preview`, `prod`; edit the regex to add one such as
+`local`), otherwise sops refuses with "no matching creation rules found". The manual steps below do
+the same thing.
 
 Backup item: make one Bitwarden Secure Note named for the admin key. Paste the contents of
 `admin.key` (the `AGE-SECRET-KEY-1...` line is the one that matters) into Notes, and the

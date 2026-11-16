@@ -357,7 +357,7 @@ while true; do
   [[ -z "$proj" ]] && break
   [[ "$proj" =~ ^[A-Za-z0-9_-]+$ ]] || { warn "letters, digits, _ and - only"; continue; }
   ask envn "Environment (dev, preview or prod; prod is admin-only):" || break
-  [[ "$envn" =~ ^(dev|preview|prod)$ ]] || { warn "environment must be dev, preview or prod (.sops.yaml has no other rule)"; continue; }
+  [[ "$envn" =~ ^[A-Za-z0-9_-]+$ ]] || { warn "bad environment name"; continue; }   # sops rejects names .sops.yaml has no rule for
   if [[ -f "$proj/$envn.env" ]]; then
     if grep -q 'ENC\[' "$proj/$envn.env"; then warn "$proj/$envn.env exists; use: devbox-secrets edit $proj $envn"
     else warn "$proj/$envn.env exists but is NOT encrypted. Encrypt it in place: (cd $REPO && sops encrypt --in-place $proj/$envn.env), or delete it and re-run."; fi
