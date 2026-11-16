@@ -2,6 +2,12 @@
 
 All notable changes to devbox. Versions are git tags on `main`.
 
+## [Unreleased]
+
+### Added
+- `.devcontainer/host/setup-secrets.sh`: host wizard for the one-time secrets setup (keys,
+  passphrases, secrets repo, `.sops.yaml`, first files, PATH link, unlock test, remote).
+
 ## [0.2.0] - 2026-11-15
 
 ### Added

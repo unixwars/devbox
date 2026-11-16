@@ -48,6 +48,27 @@ $XDG_RUNTIME_DIR/devbox/age.key (tmpfs)
 
 ## Setup (once, on the host)
 
+Guided: run the wizard in a host terminal, not in the devcontainer:
+
+```
+bash .devcontainer/host/setup-secrets.sh
+```
+
+It installs the pinned sops/age if missing, generates and passphrase-protects both keys (it makes
+you back up the admin key first), creates `~/src/secrets` with `.sops.yaml`, encrypts
+`_global/dev.env` (GH_TOKEN) and any project files you name, links `devbox-secrets` into
+`~/.local/bin`, tests unlock/decrypt/lock, and offers a private remote. It is re-runnable: finished
+steps are skipped, and it never prints or stores secret values. Environments are limited to
+`dev`, `preview` and `prod`, the ones `.sops.yaml` has rules for. The manual steps below do the same
+thing.
+
+Backup item: make one Bitwarden Secure Note named for the admin key. Paste the contents of
+`admin.key` (the `AGE-SECRET-KEY-1...` line is the one that matters) into Notes, and the
+passphrase into a hidden custom field. The box key needs no backup: regenerate it, then run
+`sops updatekeys` and `sops rotate -i` on each file.
+
+Manual steps:
+
 ```
 mkdir -p ~/.config/devbox ~/src/secrets && chmod 700 ~/.config/devbox
 

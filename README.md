@@ -79,7 +79,8 @@ deletes that state for good.
 Secrets live encrypted in a private git repo at `~/src/secrets` (read-only at `/secrets`).
 On the host `devbox-secrets unlock` puts the box key on tmpfs; in the box
 `with-secrets <project> <env> -- <cmd>` runs a command with the values in its environment.
-Setup, workflow and limits: `docs/secrets.md`.
+Setup (guided: `bash .devcontainer/host/setup-secrets.sh` on the host), workflow and limits:
+`docs/secrets.md`.
 
 ## Playwright (opt-in)
 
