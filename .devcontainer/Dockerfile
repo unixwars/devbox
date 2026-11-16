@@ -21,12 +21,17 @@ RUN groupadd -g "$GID" "$USERNAME" \
 # Mount points for the named volumes. Created here, owned by the user, so a fresh
 # volume inherits that ownership on first use.
 RUN install -d -o "$USERNAME" -g "$USERNAME" \
-      /home/$USERNAME/.claude /home/$USERNAME/.agents /home/$USERNAME/.cache /home/$USERNAME/.npm \
- && install -d -m 700 -o "$USERNAME" -g "$USERNAME" /home/$USERNAME/.secrets
+      /home/$USERNAME/.claude /home/$USERNAME/.agents /home/$USERNAME/.cache /home/$USERNAME/.npm
 
 # Interactive shells: tab completion and "did you mean to install ...?" hints.
 COPY bashrc-extra.sh /tmp/bashrc-extra.sh
 RUN cat /tmp/bashrc-extra.sh >> /etc/bash.bashrc && rm /tmp/bashrc-extra.sh
+
+# Pinned sops + age for the secrets workflow (checksums verified in the script).
+COPY install-sops-age.sh /tmp/install-sops-age.sh
+RUN bash /tmp/install-sops-age.sh /usr/local/bin && rm /tmp/install-sops-age.sh
+COPY bin/with-secrets /usr/local/bin/with-secrets
+RUN chmod 755 /usr/local/bin/with-secrets
 
 USER $USERNAME
 WORKDIR /workspaces

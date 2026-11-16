@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(//run/devbox-secrets/**)",
+      "Read(//workspaces/**/.env*)",
+      "Bash(sops *)",
+      "Bash(with-secrets * -- env*)",
+      "Bash(with-secrets * -- printenv*)",
+      "Bash(* /run/devbox-secrets*)"
+    ]
+  }
+}

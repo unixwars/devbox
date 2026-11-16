@@ -2,9 +2,8 @@
 # Runs after the container is created. Idempotent and quick: heavy tools are opt-in.
 set -euo pipefail
 
-# Secrets volume: owner-only, with the GitHub token reachable at the path the projects expect
-chmod 700 ~/.secrets
-ln -sf ~/.secrets/gh_token ~/.gh_token
+# Claude Code deny rules for secrets (merged into the persisted settings; idempotent)
+bash /devbox/.devcontainer/merge-claude-settings.sh /devbox/.devcontainer/claude-settings.template.json "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json"
 
 # Let `git push` over SSH reach github.com without a prompt
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
