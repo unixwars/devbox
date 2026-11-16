@@ -20,7 +20,7 @@ environment (see Limits).
 | Piece | Where | Role |
 |---|---|---|
 | Secrets repo | Private git repo, cloned on the host at `~/src/secrets` | Source of truth. One sops-encrypted dotenv file per project and environment. Its remote is the backup. |
-| Admin key | Host, passphrase-protected, backed up as one Bitwarden item | Decrypts everything, including prod. Never enters the box. |
+| Admin key | Host, passphrase-protected, backed up as one password-manager item | Decrypts everything, including prod. Never enters the box. |
 | Box key | Host, passphrase-encrypted file | Decrypts dev files only. Unsealed into the box per work session. |
 | `devbox-secrets` | Host script | `unlock`, `lock`, `status`, `edit <project> <env>` |
 | `with-secrets` | In the box | Runs one command with one environment's values in its process environment |
@@ -63,9 +63,9 @@ match a rule in `.sops.yaml` (by default `dev`, `preview`, `prod`; edit the rege
 `local`), otherwise sops refuses with "no matching creation rules found". The manual steps below do
 the same thing.
 
-Backup item: make one Bitwarden Secure Note named for the admin key. Paste the contents of
+Backup item: in any password manager, make one secure note named for the admin key. Paste the contents of
 `admin.key` (the `AGE-SECRET-KEY-1...` line is the one that matters) into Notes, and the
-passphrase into a hidden custom field. The box key needs no backup: regenerate it, then run
+passphrase into a hidden field if your manager has one (otherwise below the key in the notes). The box key needs no backup: regenerate it, then run
 `sops updatekeys` and `sops rotate -i` on each file.
 
 Manual steps:
@@ -115,7 +115,7 @@ ln -s /path/to/devbox/.devcontainer/host/devbox-secrets ~/.local/bin/devbox-secr
   `DEVBOX_ADMIN_KEY` at the encrypted file; sops prompts for the passphrase. The check ran
   `sops decrypt` with `SOPS_AGE_KEY_FILE` set to such a file; `devbox-secrets edit` uses the same
   variable (`SOPS_AGE_KEY_FILE=$DEVBOX_ADMIN_KEY`).
-- Back up the admin key (and passphrase) as one Bitwarden item. Losing it loses prod.
+- Back up the admin key (and passphrase) as one password-manager item. Losing it loses prod.
 - Without `sops` and `age` on the host, install them first (versions pinned in
   `.devcontainer/install-sops-age.sh`).
 - Tests: `bash tests/secrets/run.sh`.
@@ -316,7 +316,7 @@ git -C ~/src/secrets commit -am "..." && git -C ~/src/secrets push
   HTTP-style credentials; the container would hold placeholders only).
 - Replacing Claude's OAuth credentials with `CLAUDE_CODE_OAUTH_TOKEN` through this mechanism.
 - Per-project box keys.
-- Vault or OpenBao, or Bitwarden as the store.
+- Vault or OpenBao, or a password manager as the store.
 - Migrating existing projects. When a project moves over, its `.env*` files and `.bak` copies
   must be deleted, or a variable `with-secrets` does not set silently falls back to a stale
   file value; the old `devbox-secrets` volume should be removed.

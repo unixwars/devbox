@@ -271,10 +271,9 @@ pause "Enter for the next stage"
 stage "Back up the admin key, then protect both keys with passphrases"
 if [[ -f "$CFG/admin.key" ]]; then
   say "The admin key decrypts prod and everything else. Losing it loses prod."
-  step "Create ONE Bitwarden item holding: the contents of $CFG/admin.key and the passphrase"
+  step "In your password manager, create ONE item (a secure note works) holding: the contents of $CFG/admin.key and the passphrase"
   step "you are about to choose. (View it in a terminal you trust: cat $CFG/admin.key)"
-  open_url "https://vault.bitwarden.com/#/vault"
-  confirm "Saved in Bitwarden (key AND the passphrase you will use)?" || { warn "Not shredding anything. Re-run when saved."; exit 1; }
+  confirm "Saved in your password manager (key AND the passphrase you will use)?" || { warn "Not shredding anything. Re-run when saved."; exit 1; }
   step "Choose the ADMIN key passphrase (asked twice)."
   age -p -o "$CFG/admin.key.enc" "$CFG/admin.key"
   step "Verify: enter the same passphrase once more."
