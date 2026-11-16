@@ -2,13 +2,7 @@
 
 All notable changes to devbox. Versions are git tags on `main`.
 
-## [Unreleased]
-
-### Added
-- `.devcontainer/host/setup-secrets.sh`: host wizard for the one-time secrets setup (keys,
-  passphrases, secrets repo, `.sops.yaml`, first files, PATH link, unlock test, remote).
-
-## [0.2.0] - 2026-11-15
+## [0.2.0] - 2026-11-16
 
 ### Added
 - sops+age secrets: encrypted dotenv files per project and environment in a private host repo
@@ -24,6 +18,9 @@ All notable changes to devbox. Versions are git tags on `main`.
 - `tests/verify-on-host.sh`: interactive wizard that verifies the setup from the host (sandbox
   container with the real mounts, passphrase flows, then the rebuilt devcontainer); `--from N` resumes.
 - `VERSION` file.
+- `.devcontainer/host/setup-secrets.sh`: host wizard for the one-time secrets setup (keys,
+  passphrases, secrets repo, `.sops.yaml` with `dev`, `preview`, `local` and admin-only `prod`, first
+  files, PATH link, unlock test, private remote). Re-runnable.
 - `docs/secrets.md`: design, setup, limits and a manual verification checklist.
 
 ### Changed
