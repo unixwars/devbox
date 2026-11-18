@@ -82,10 +82,34 @@ On the host `devbox-secrets unlock` puts the box key on tmpfs; in the box
 Setup (guided: `bash .devcontainer/host/setup-secrets.sh` on the host), workflow and limits:
 `docs/secrets.md`.
 
-## Playwright (opt-in)
+## Optional extras
 
-`bash /devbox/.devcontainer/install-playwright.sh /workspaces/<project>`. Run again after a
-rebuild, since the system libraries live in the container layer.
+The image is lean by default. Extras are installed by name:
+
+| Extra | Installs |
+|---|---|
+| `test-tooling` | Postgres server and client, Chromium's system libraries, `devbox-pg` |
+| `stripe` | Stripe CLI, pinned and checksum verified |
+| `vercel` | Vercel CLI, pinned, from npm |
+
+**Automatically.** Set `DEVBOX_EXTRAS` on the host before building the container: `all`, or a
+list such as `export DEVBOX_EXTRAS="test-tooling stripe"` (space or comma separated). The
+image build installs them, and container create re-checks and installs anything missing.
+Anything already present is skipped. Changing the list needs a
+rebuild; unset means none.
+
+**By hand**, inside the box: `bash /devbox/.devcontainer/install-extras.sh stripe vercel`, or
+run one script directly (`install-test-tooling.sh`, `install-stripe-cli.sh`, `install-vercel-cli.sh`).
+
+`devbox-pg start | stop | url [db] | createdb <db> | dropdb <db>` runs a throwaway Postgres on
+127.0.0.1:5433 as the current user (override with `DEVBOX_PG_PORT`, `DEVBOX_PG_DATA`). Its data
+is in /tmp and goes with the container.
+
+## Playwright browser (opt-in)
+
+`bash /devbox/.devcontainer/install-playwright.sh /workspaces/<project>` installs the system
+libraries and Chromium. With the `test-tooling` extra the libraries are already there, so
+`npx playwright install chromium` is enough; the download is cached in the devbox-cache volume.
 
 ## Limits
 
