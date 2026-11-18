@@ -1,6 +1,11 @@
 {
   "name": "devbox",
-  "build": { "dockerfile": "Dockerfile" },
+  // DEVBOX_EXTRAS, set on the host, picks optional tools: "all", or any of
+  // test-tooling, stripe, vercel (space or comma separated). Unset = lean image.
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": { "DEVBOX_EXTRAS": "${localEnv:DEVBOX_EXTRAS:}" }
+  },
   "features": {
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
   },
@@ -40,7 +45,8 @@
   "containerEnv": {
     // Keeps ~/.claude.json inside the persisted directory
     "CLAUDE_CONFIG_DIR": "/home/dev/.claude",
-    "PLAYWRIGHT_BROWSERS_PATH": "/home/dev/.cache/ms-playwright"
+    "PLAYWRIGHT_BROWSERS_PATH": "/home/dev/.cache/ms-playwright",
+    "DEVBOX_EXTRAS": "${localEnv:DEVBOX_EXTRAS:}"
   },
 
   "postCreateCommand": "bash /devbox/.devcontainer/post-create.sh",

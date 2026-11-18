@@ -13,10 +13,10 @@ sort -u -o ~/.ssh/known_hosts ~/.ssh/known_hosts
 # Claude Code (the npm cache is a volume, so this is fast after the first time)
 npm install -g @anthropic-ai/claude-code
 
-# Vercel CLI (same npm cache volume)
-npm install -g vercel
+# Optional extras named in DEVBOX_EXTRAS on the host (whatever the image already has is skipped)
+bash /devbox/.devcontainer/install-extras.sh
 
 # gh tab completion
 gh completion -s bash | sudo tee /etc/bash_completion.d/gh >/dev/null
 
-echo "devbox ready. Playwright's browser libraries are in the image; fetch the browser with: npx playwright install chromium"
+echo "devbox ready. Playwright is opt-in: bash /devbox/.devcontainer/install-playwright.sh"
