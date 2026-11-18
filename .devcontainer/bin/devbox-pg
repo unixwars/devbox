@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# A throwaway Postgres for tests, run as the current user on a local port.
+# Usage: devbox-pg start | stop | url [dbname] | createdb <dbname> | dropdb <dbname>
+# The data directory lives in /tmp, so it disappears with the container. Data safety is not a goal.
+set -euo pipefail
+PGBIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)
+DATA=${DEVBOX_PG_DATA:-/tmp/devbox-pg}
+PORT=${DEVBOX_PG_PORT:-5433}
+SOCK=/tmp/devbox-pg-sock
+
+case "${1:-}" in
+  start)
+    if ! [ -d "$DATA" ]; then "$PGBIN/initdb" -D "$DATA" -U postgres --auth=trust >/dev/null; fi
+    mkdir -p "$SOCK"
+    "$PGBIN/pg_ctl" -D "$DATA" status >/dev/null 2>&1 \
+      || "$PGBIN/pg_ctl" -D "$DATA" -l "$DATA/log" -o "-p $PORT -k $SOCK -c listen_addresses=127.0.0.1 -c fsync=off" -w start >/dev/null
+    ;;
+  stop) "$PGBIN/pg_ctl" -D "$DATA" -m fast stop >/dev/null ;;
+  url) echo "postgresql://postgres@127.0.0.1:$PORT/${2:-postgres}" ;;
+  createdb) "$PGBIN/createdb" -h 127.0.0.1 -p "$PORT" -U postgres "${2:?name}" ;;
+  dropdb) "$PGBIN/dropdb" -h 127.0.0.1 -p "$PORT" -U postgres --if-exists "${2:?name}" ;;
+  *) echo "usage: devbox-pg start|stop|url [db]|createdb <db>|dropdb <db>" >&2; exit 2 ;;
+esac

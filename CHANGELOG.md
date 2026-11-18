@@ -2,6 +2,15 @@
 
 All notable changes to devbox. Versions are git tags on `main`.
 
+## [Unreleased]
+
+### Added
+- Test tooling in the image: Postgres server and client, Playwright's Chromium system libraries
+  (replaces `install-playwright.sh` for libraries), pinned Stripe CLI 1.55.12 (checksum verified),
+  Vercel CLI via npm on create.
+- `devbox-pg`: throwaway Postgres on 127.0.0.1:5433 as the dev user (`start`, `stop`, `url`,
+  `createdb`, `dropdb`), data in /tmp.
+
 ## [0.2.0] - 2026-11-16
 
 ### Added
