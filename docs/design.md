@@ -14,7 +14,7 @@ One development container for all local projects, light on a laptop (i5-1235U, 1
 | Network | Unrestricted, no gateway or proxy | No egress allowlist (the o3s approach); saves two idle containers and a lot of setup |
 | Nested containers | None | An agent cannot start a project's database inside the box; use a sibling container or the shared Neon DB |
 | Base | `debian:stable-slim` plus a short package list | Anything else is `sudo apt install` and is lost on rebuild; add it to the Dockerfile |
-| Node | devcontainer `node` feature, LTS | Pinned by feature, not by project |
+| Node | Tarball from nodejs.org in the Dockerfile (`install-node.sh`), one LTS line | A new LTS is a one-line bump; no devcontainer feature, so its apt work is not redone on every image change |
 | Claude | `npm -g` at create, state in volumes | Reinstall on every rebuild, cheap thanks to the npm cache volume |
 | Playwright | Opt-in script | Not ready out of the box; avoids roughly 500 MB and a RAM spike for projects that do not need it |
 | Projects | Bind mount of `~/src/projects` at `/workspaces` | Only that subdirectory is visible |

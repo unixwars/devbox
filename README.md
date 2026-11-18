@@ -94,8 +94,8 @@ The image is lean by default. Extras are installed by name:
 
 **Automatically.** Set `DEVBOX_EXTRAS` on the host before building the container: `all`, or a
 list such as `export DEVBOX_EXTRAS="test-tooling stripe"` (space or comma separated). The
-image build installs what it can (everything except `vercel`, which needs node) and container
-create installs the rest. Anything already present is skipped. Changing the list needs a
+image build installs them, and container create re-checks and installs anything missing.
+Anything already present is skipped. Changing the list needs a
 rebuild; unset means none.
 
 **By hand**, inside the box: `bash /devbox/.devcontainer/install-extras.sh stripe vercel`, or

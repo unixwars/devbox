@@ -4,7 +4,7 @@
 #   test-tooling  Postgres, Chromium system libraries, devbox-pg
 #   stripe        Stripe CLI (pinned, checksum verified)
 #   vercel        Vercel CLI (pinned, from npm)
-# During the image build node is missing, so "vercel" is skipped there and post-create does it.
+# Node is in the image before this runs, so every extra installs at build time.
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -20,7 +20,7 @@ for name in $list; do
     stripe) bash "$here/install-stripe-cli.sh" ;;
     vercel)
       if command -v npm >/dev/null 2>&1; then bash "$here/install-vercel-cli.sh"
-      else echo "vercel: skipped, node is not there yet; it is installed when the container is created"; fi ;;
+      else echo "vercel: skipped, npm not found" >&2; exit 3; fi ;;
     *) echo "unknown extra: $name (known: $all)" >&2; exit 2 ;;
   esac
 done

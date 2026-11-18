@@ -394,7 +394,6 @@ stage_2() {
 stage_3() {
   stage "Build the image"
   say "podman build of .devcontainer/Dockerfile: sops/age install with checksums, with-secrets COPY."
-  note "The Node devcontainer feature is applied only by VS Code, so it is not part of this build."
   printf '\n'
   need_sandbox
   build_image || true

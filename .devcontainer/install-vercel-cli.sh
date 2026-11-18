@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Optional extra "vercel": the Vercel CLI, pinned, from npm. Needs node, so it cannot run
-# during the image build; post-create installs it (the npm cache is a volume).
+# Optional extra "vercel": the Vercel CLI, pinned, from npm. Needs node, which the image
+# provides before the extras layer.
 set -euo pipefail
 
 VERCEL_VERSION=66.1.0

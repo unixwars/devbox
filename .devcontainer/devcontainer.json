@@ -6,10 +6,6 @@
     "dockerfile": "Dockerfile",
     "args": { "DEVBOX_EXTRAS": "${localEnv:DEVBOX_EXTRAS:}" }
   },
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
-  },
-
   // Rootless Podman: map the host user to uid/gid 1000 inside, so files written to
   // ~/src/projects keep your ownership on the host. Change 1000 if `id -u` differs.
   "remoteUser": "dev",
